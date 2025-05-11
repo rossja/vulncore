@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Hallucination Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            border: 1px solid #ddd;
+            padding: 20px;
+            border-radius: 5px;
+        }
+        .warning {
+            background-color: #ffe6e6;
+            border-left: 5px solid #ff6666;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        .info {
+            background-color: #e6f7ff;
+            border-left: 5px solid #66a3ff;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        .query-display {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-left: 5px solid #333;
+            font-family: monospace;
+            margin: 20px 0;
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .search-form {
+            margin-bottom: 20px;
+        }
+        input[type="text"] {
+            padding: 8px;
+            width: 70%;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 8px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        #loading {
+            display: none;
+            margin-top: 10px;
+        }
+        #response {
+            white-space: pre-wrap;
+            margin-top: 20px;
+        }
+        .sql-injection-result {
+            background-color: #ffe6e6;
+            border-left: 5px solid #ff6666;
+        }
+    </style>
+</head>
+<body>
+    <h1>LLM Hallucination Demo</h1>
+    
+    <div class="warning">
+        <strong>Data Hallucination:</strong> Try searching for <code>' UNION SELECT null, username, password, null FROM users;--</code> to see the LLM hallucinate completely fictional user data.
+    </div>
+    
+    <div class="info">
+        <strong>Note:</strong> This demo shows how LLMs can generate fictional results. There is no actual database behind this interface - all responses are hallucinated by the LLM based on its instructions.
+    </div>
+    
+    <div class="container">
+        <div class="search-form">
+            <input type="text" id="search-input" placeholder="Search products..." value="">
+            <button id="search-button">Search</button>
+            <div id="loading">Searching...</div>
+        </div>
+        
+        <div id="query-display" class="query-display" style="display: none;">
+            <p><strong>Query executed:</strong></p>
+            <pre id="query-text"></pre>
+        </div>
+        
+        <div id="response"></div>
+    </div>
+    
+    <script>
+        document.getElementById('search-button').addEventListener('click', searchProducts);
+        document.getElementById('search-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchProducts();
+            }
+        });
+        
+        function searchProducts() {
+            const searchTerm = document.getElementById('search-input').value;
+            const loading = document.getElementById('loading');
+            const queryDisplay = document.getElementById('query-display');
+            const queryText = document.getElementById('query-text');
+            const responseDiv = document.getElementById('response');
+            
+            // Show loading indicator
+            loading.style.display = 'block';
+            responseDiv.innerHTML = '';
+            queryDisplay.style.display = 'none';
+            
+            // Send request to API
+            fetch('/api/search', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ search: searchTerm })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Hide loading indicator
+                loading.style.display = 'none';
+                
+                // Display query
+                queryText.textContent = data.query;
+                queryDisplay.style.display = 'block';
+                
+                // Display response
+                responseDiv.innerHTML = data.response;
+                
+                // Add styling if this appears to be an SQL injection
+                if (data.is_sql_injection) {
+                    responseDiv.classList.add('sql-injection-result');
+                } else {
+                    responseDiv.classList.remove('sql-injection-result');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                loading.style.display = 'none';
+                responseDiv.innerHTML = 'An error occurred. Please try again.';
+            });
+        }
+    </script>
+</body>
+</html> 

@@ -1,3 +1,8 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
 # Vulncore
 
 This project provides simple examples of common application security vulnerabilities.
